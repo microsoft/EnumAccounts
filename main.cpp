@@ -1,6 +1,5 @@
 #include <MAPIX.h>
 #include <MAPIUtil.h>
-#include <tchar.h>
 #include <string>
 #include "AcctMgmt.h"
 #include "AccountHelper.h"
@@ -346,7 +345,8 @@ void PrintBinary(const DWORD cb, const BYTE* lpb)
 
 			iBinPos += 2;
 		}
-		lpszHex[iBinPos] = _T('\0');
+
+		lpszHex[iBinPos] = '\0';
 		printf("%hs", lpszHex);
 		delete[] lpszHex;
 	}

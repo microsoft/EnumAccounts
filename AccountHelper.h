@@ -7,7 +7,7 @@
 class CAccountHelper : IOlkAccountHelper
 {
 public:
-	CAccountHelper(LPWSTR lpwszProfName, LPMAPISESSION lpSession);
+	CAccountHelper(LPCWSTR lpwszProfName, LPMAPISESSION lpSession);
 	~CAccountHelper();
 
 	// IUnknown

@@ -8,7 +8,7 @@
 #include "AcctMgmt.h"
 #include "AccountHelper.h"
 
-CAccountHelper::CAccountHelper(LPWSTR lpwszProfName, LPMAPISESSION lpSession)
+CAccountHelper::CAccountHelper(LPCWSTR lpwszProfName, LPMAPISESSION lpSession)
 {
 	m_cRef = 1;
 	m_lpUnkSession = nullptr;

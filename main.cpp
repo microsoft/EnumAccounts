@@ -1,7 +1,7 @@
 #include <MAPIX.h>
 #include <MAPIUtil.h>
 #include <tchar.h>
-#include <strsafe.h>
+#include <string>
 #include "AcctMgmt.h"
 #include "AccountHelper.h"
 
@@ -15,10 +15,10 @@ struct StartOle {
 	~StartOle() { CoUninitialize(); }
 } _inst_StartOle;
 
-HRESULT GetProfileName(LPMAPISESSION lpSession, LPWSTR* lppwszProfile);
+std::wstring GetProfileName(LPMAPISESSION lpSession);
 void IterateAllProps(LPOLKACCOUNT lpAccount);
-HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPWSTR lpwszProfile, bool bIterateAllProps);
-HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPWSTR lpwszProfile, ULONG ulFlags);
+HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bIterateAllProps);
+HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, ULONG ulFlags);
 void PrintBinary(DWORD cb, const BYTE* lpb);
 
 void IterateAllProps(LPOLKACCOUNT lpAccount)
@@ -58,7 +58,7 @@ void IterateAllProps(LPOLKACCOUNT lpAccount)
 	printf("Done iterating all properties\r\n");
 }
 
-HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPWSTR lpwszProfile, bool bIterateAllProps)
+HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bIterateAllProps)
 {
 	auto hRes = S_OK;
 	LPOLKACCOUNTMANAGER lpAcctMgr = nullptr;
@@ -250,7 +250,7 @@ HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPWSTR lpwszProfile, bool bIt
 	return hRes;
 }
 
-HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPWSTR lpwszProfile, ULONG ulFlags)
+HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, ULONG ulFlags)
 {
 	auto hRes = S_OK;
 	LPOLKACCOUNTMANAGER lpAcctMgr = nullptr;
@@ -293,38 +293,27 @@ HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPWSTR lpwszProfile, ULONG u
 	return hRes;
 }
 
-HRESULT GetProfileName(LPMAPISESSION lpSession, LPWSTR* lppwszProfile)
+std::wstring GetProfileName(LPMAPISESSION lpSession)
 {
 	auto hRes = S_OK;
 	LPPROFSECT lpProfSect = nullptr;
+	std::wstring profileName;
 
-	if (!lpSession || !lppwszProfile)
-		return MAPI_E_INVALID_PARAMETER;
+	if (!lpSession) return profileName;
 
-	hRes = lpSession->OpenProfileSection(LPMAPIUID(pbGlobalProfileSectionGuid),
-		nullptr, 0, &lpProfSect);
+	hRes = lpSession->OpenProfileSection(
+		LPMAPIUID(pbGlobalProfileSectionGuid),
+		nullptr,
+		0,
+		&lpProfSect);
 	if (SUCCEEDED(hRes) && lpProfSect)
 	{
 		LPSPropValue lpProfileName = nullptr;
 
-		hRes = HrGetOneProp(lpProfSect, PR_PROFILE_NAME, &lpProfileName);
-		if (SUCCEEDED(hRes) && lpProfileName && lpProfileName->ulPropTag == PR_PROFILE_NAME)
+		hRes = HrGetOneProp(lpProfSect, PR_PROFILE_NAME_W, &lpProfileName);
+		if (SUCCEEDED(hRes) && lpProfileName && lpProfileName->ulPropTag == PR_PROFILE_NAME_W)
 		{
-			size_t cbProfName = 0;
-
-			hRes = StringCbLength(lpProfileName->Value.lpszW,
-				STRSAFE_MAX_CCH, &cbProfName);
-			if (SUCCEEDED(hRes) && cbProfName > 0)
-			{
-				cbProfName += 2;
-
-				hRes = MAPIAllocateBuffer(cbProfName, reinterpret_cast<LPVOID*>(lppwszProfile));
-				if (SUCCEEDED(hRes) && *lppwszProfile)
-				{
-					hRes = StringCchCopyW(*lppwszProfile, cbProfName / 2,
-						lpProfileName->Value.lpszW);
-				}
-			}
+			profileName = std::wstring(lpProfileName->Value.lpszW);
 		}
 
 		MAPIFreeBuffer(lpProfileName);
@@ -333,7 +322,7 @@ HRESULT GetProfileName(LPMAPISESSION lpSession, LPWSTR* lppwszProfile)
 	if (lpProfSect)
 		lpProfSect->Release();
 
-	return hRes;
+	return profileName;
 }
 
 void PrintBinary(const DWORD cb, const BYTE* lpb)
@@ -490,22 +479,18 @@ void main(int argc, char * argv[])
 			&lpSession);
 		if (SUCCEEDED(hRes) && lpSession)
 		{
-			LPWSTR lpwszProfile = nullptr;
-
-			hRes = GetProfileName(lpSession, &lpwszProfile);
-			if (SUCCEEDED(hRes) && lpwszProfile)
+			auto profileName = GetProfileName(lpSession);
+			if (SUCCEEDED(hRes) && !profileName.empty())
 			{
 				if (ProgOpts.bDoWizard)
 				{
-					(void)DisplayAccountList(lpSession, lpwszProfile, ProgOpts.ulWizardFlags);
+					(void)DisplayAccountList(lpSession, profileName.c_str(), ProgOpts.ulWizardFlags);
 				}
 				else if (ProgOpts.bDoEnum)
 				{
-					(void)EnumerateAccounts(lpSession, lpwszProfile, ProgOpts.bIterateAllProps);
+					(void)EnumerateAccounts(lpSession, profileName.c_str(), ProgOpts.bIterateAllProps);
 				}
 			}
-
-			MAPIFreeBuffer(lpwszProfile);
 		}
 
 		if (lpSession) lpSession->Release();

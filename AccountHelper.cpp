@@ -12,27 +12,7 @@ CAccountHelper::CAccountHelper(LPWSTR lpwszProfName, LPMAPISESSION lpSession)
 {
 	m_cRef = 1;
 	m_lpUnkSession = nullptr;
-	m_lpwszProfile = nullptr;
-	m_cchProfile = 0;
-
-	auto hRes = S_OK;
-
-	if (lpwszProfName)
-	{
-
-		hRes = StringCchLengthW(lpwszProfName, STRSAFE_MAX_CCH, &m_cchProfile);
-		if (SUCCEEDED(hRes) && m_cchProfile)
-		{
-			m_cchProfile++;
-
-			m_lpwszProfile = static_cast<LPWSTR>(malloc(m_cchProfile * sizeof(WCHAR)));
-
-			if (m_lpwszProfile)
-			{
-				(void)StringCchCopyW(m_lpwszProfile, m_cchProfile, lpwszProfName);
-			}
-		}
-	}
+	m_lpwszProfile = lpwszProfName;
 
 	if (lpSession)
 	{
@@ -44,9 +24,6 @@ CAccountHelper::~CAccountHelper()
 {
 	if (m_lpUnkSession)
 		m_lpUnkSession->Release();
-
-	if (m_lpwszProfile)
-		free(m_lpwszProfile);
 }
 
 STDMETHODIMP CAccountHelper::QueryInterface(REFIID riid,
@@ -78,22 +55,19 @@ STDMETHODIMP_(ULONG) CAccountHelper::Release()
 
 STDMETHODIMP CAccountHelper::GetIdentity(LPWSTR pwszIdentity, DWORD * pcch)
 {
-	if (!pcch || !m_lpwszProfile)
+	if (!pcch || m_lpwszProfile.empty())
 		return E_INVALIDARG;
 
-	auto hRes = S_OK;
-
-	if (m_cchProfile > *pcch)
+	if (m_lpwszProfile.length() > *pcch)
 	{
-		*pcch = m_cchProfile;
+		*pcch = m_lpwszProfile.length();
 		return E_OUTOFMEMORY;
 	}
 
-	hRes = StringCchCopyW(pwszIdentity, *pcch, m_lpwszProfile);
+	wcscpy_s(pwszIdentity, *pcch, m_lpwszProfile.c_str());
+	*pcch = m_lpwszProfile.length();
 
-	*pcch = m_cchProfile;
-
-	return hRes;
+	return S_OK;
 }
 
 STDMETHODIMP CAccountHelper::GetMapiSession(LPUNKNOWN * ppmsess)

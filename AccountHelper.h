@@ -2,7 +2,7 @@
 
 #include "AcctMgmt.h"
 #include <MAPIX.h>
-//#include <MAPIDefS.h>
+#include <string>
 
 class CAccountHelper : IOlkAccountHelper
 {
@@ -28,6 +28,5 @@ public:
 private:
 	LONG m_cRef;
 	LPUNKNOWN m_lpUnkSession;
-	LPWSTR m_lpwszProfile;
-	size_t m_cchProfile;
+	std::wstring m_lpwszProfile;
 };

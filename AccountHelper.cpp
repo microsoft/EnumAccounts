@@ -1,9 +1,9 @@
-#include <windows.h>
+#include <Windows.h>
 #include <strsafe.h>
 
 #define USES_IID_IMAPISession
 #include <initguid.h>
-#include <mapiguid.h>
+#include <MAPIGuid.h>
 
 #include "AcctMgmt.h"
 #include "AccountHelper.h"
@@ -11,52 +11,52 @@
 CAccountHelper::CAccountHelper(LPWSTR lpwszProfName, LPMAPISESSION lpSession)
 {
 	m_cRef = 1;
-	m_lpUnkSession = NULL;
-	m_lpwszProfile = NULL;
+	m_lpUnkSession = nullptr;
+	m_lpwszProfile = nullptr;
 	m_cchProfile = 0;
 
-	HRESULT hRes = S_OK;
+	auto hRes = S_OK;
 
-	if(lpwszProfName)
+	if (lpwszProfName)
 	{
 
 		hRes = StringCchLengthW(lpwszProfName, STRSAFE_MAX_CCH, &m_cchProfile);
-		if(SUCCEEDED(hRes) && m_cchProfile)
+		if (SUCCEEDED(hRes) && m_cchProfile)
 		{
 			m_cchProfile++;
 
-			m_lpwszProfile = (LPWSTR) malloc(m_cchProfile * sizeof(WCHAR));
+			m_lpwszProfile = static_cast<LPWSTR>(malloc(m_cchProfile * sizeof(WCHAR)));
 
-			if(m_lpwszProfile)
+			if (m_lpwszProfile)
 			{
-				hRes = StringCchCopyW(m_lpwszProfile, m_cchProfile, lpwszProfName);
+				(void)StringCchCopyW(m_lpwszProfile, m_cchProfile, lpwszProfName);
 			}
 		}
 	}
 
-	if(lpSession)
+	if (lpSession)
 	{
-		hRes = lpSession->QueryInterface(IID_IUnknown, (LPVOID*)&m_lpUnkSession);
+		(void)lpSession->QueryInterface(IID_IUnknown, reinterpret_cast<LPVOID*>(&m_lpUnkSession));
 	}
 }
 
 CAccountHelper::~CAccountHelper()
 {
-	if(m_lpUnkSession)
+	if (m_lpUnkSession)
 		m_lpUnkSession->Release();
 
-	if(m_lpwszProfile)
+	if (m_lpwszProfile)
 		free(m_lpwszProfile);
 }
 
 STDMETHODIMP CAccountHelper::QueryInterface(REFIID riid,
-											  LPVOID * ppvObj)
+	LPVOID * ppvObj)
 {
-	*ppvObj = 0;
+	*ppvObj = nullptr;
 	if (riid == IID_IOlkAccountHelper ||
 		riid == IID_IUnknown)
 	{
-		*ppvObj = (LPVOID)this;
+		*ppvObj = static_cast<LPVOID>(this);
 		AddRef();
 		return S_OK;
 	}
@@ -65,25 +65,25 @@ STDMETHODIMP CAccountHelper::QueryInterface(REFIID riid,
 
 STDMETHODIMP_(ULONG) CAccountHelper::AddRef()
 {
-	LONG lCount = InterlockedIncrement(&m_cRef);
+	const auto lCount = InterlockedIncrement(&m_cRef);
 	return lCount;
 }
 
 STDMETHODIMP_(ULONG) CAccountHelper::Release()
 {
-	LONG lCount = InterlockedDecrement(&m_cRef);
-	if (!lCount)  delete this;
+	const auto lCount = InterlockedDecrement(&m_cRef);
+	if (!lCount) delete this;
 	return lCount;
 }
 
 STDMETHODIMP CAccountHelper::GetIdentity(LPWSTR pwszIdentity, DWORD * pcch)
 {
-	if(!pcch || !m_lpwszProfile)
+	if (!pcch || !m_lpwszProfile)
 		return E_INVALIDARG;
 
-	HRESULT hRes = S_OK;
+	auto hRes = S_OK;
 
-	if(m_cchProfile > *pcch)
+	if (m_cchProfile > *pcch)
 	{
 		*pcch = m_cchProfile;
 		return E_OUTOFMEMORY;
@@ -98,12 +98,12 @@ STDMETHODIMP CAccountHelper::GetIdentity(LPWSTR pwszIdentity, DWORD * pcch)
 
 STDMETHODIMP CAccountHelper::GetMapiSession(LPUNKNOWN * ppmsess)
 {
-	if(!ppmsess)
+	if (!ppmsess)
 		return E_INVALIDARG;
 
-	if(m_lpUnkSession)
+	if (m_lpUnkSession)
 	{
-		return m_lpUnkSession->QueryInterface(IID_IMAPISession, (LPVOID*)ppmsess);
+		return m_lpUnkSession->QueryInterface(IID_IMAPISession, reinterpret_cast<LPVOID*>(ppmsess));
 	}
 
 	return E_NOTIMPL;

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <mapix.h>
-#include <mapidefs.h>
-
 #define ACCT_INIT_NOSYNCH_MAPI_ACCTS 0x00000001
 
 #define E_ACCT_NOT_FOUND 0x800C8101
@@ -20,7 +17,6 @@
 #define NOTIFY_ACCT_PREDELETED 5
 
 #define OLK_ACCOUNT_NO_FLAGS 0
-
 
 //Class Identifiers
 //Use the DEFINE_GUID macro defined in the Platform SDK header file guiddef.h to associate the GUID symbolic name with its value.
@@ -94,15 +90,15 @@ typedef struct {
 } ACCT_BIN;
 
 typedef struct
-    {
-        DWORD dwType;
-        union
-            {
-            DWORD dw;
-            WCHAR *pwsz;
-            ACCT_BIN bin;
-            } Val;
-    } ACCT_VARIANT;
+{
+	DWORD dwType;
+	union
+	{
+		DWORD dw;
+		WCHAR *pwsz;
+		ACCT_BIN bin;
+	} Val;
+} ACCT_VARIANT;
 
 #define PR_PRIMARY_SEND_ACCT PROP_TAG(PT_UNICODE, 0x0e28)
 #define PR_NEXT_SEND_ACCT PROP_TAG(PT_UNICODE, 0x0e29)

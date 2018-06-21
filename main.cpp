@@ -29,11 +29,48 @@ void PrintBinary(DWORD cb, const BYTE* lpb);
 	return __hRes; \
 }()
 
+void LogPropString(LPOLKACCOUNT lpAccount, ULONG propTag, LPCSTR propName)
+{
+	auto pProp = ACCT_VARIANT();
+	auto hRes = lpAccount->GetProp(propTag, &pProp);
+	if (SUCCEEDED(hRes) && pProp.Val.pwsz)
+	{
+		printf("%hs = \"%ws\"\n", propName, pProp.Val.pwsz);
+		(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
+	}
+}
+#define LOGPROPSTRING(lpAccount, propTag) LogPropString((lpAccount), (propTag), #propTag)
+
+void LogPropLong(LPOLKACCOUNT lpAccount, ULONG propTag, LPCSTR propName)
+{
+	auto pProp = ACCT_VARIANT();
+	auto hRes = lpAccount->GetProp(propTag, &pProp);
+	if (SUCCEEDED(hRes) && pProp.Val.pwsz)
+	{
+		printf("%hs = 0x%08lX\n", propName, pProp.Val.dw);
+	}
+}
+#define LOGPROPLONG(lpAccount, propTag) LogPropLong((lpAccount), (propTag), #propTag)
+
+void LogPropBinary(LPOLKACCOUNT lpAccount, ULONG propTag, LPCSTR propName)
+{
+	auto pProp = ACCT_VARIANT();
+	auto hRes = lpAccount->GetProp(propTag, &pProp);
+	if (SUCCEEDED(hRes) && pProp.Val.pwsz)
+	{
+		printf("%hs = ", propName);
+		PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
+		printf("\n");
+		(void)lpAccount->FreeMemory(pProp.Val.bin.pb);
+	}
+}
+#define LOGPROPBINARY(lpAccount, propTag) LogPropBinary((lpAccount), (propTag), #propTag)
+
 void IterateAllProps(LPOLKACCOUNT lpAccount)
 {
 	if (!lpAccount) return;
 
-	printf("Iterating all properties\r\n");
+	printf("Iterating all properties\n");
 	auto hRes = S_OK;
 	ULONG i = 0;
 	ACCT_VARIANT pProp = { 0 };
@@ -41,29 +78,30 @@ void IterateAllProps(LPOLKACCOUNT lpAccount)
 	for (i = 0; i < 0x8000; i++)
 	{
 		memset(&pProp, 0, sizeof(ACCT_VARIANT));
-		hRes = EC_H(lpAccount->GetProp(PROP_TAG(PT_LONG, i), &pProp));
+		hRes = lpAccount->GetProp(PROP_TAG(PT_LONG, i), &pProp);
 		if (SUCCEEDED(hRes))
 		{
-			printf("Prop = 0x%08lX, Type = PT_LONG, Value = 0x%08lX\r\n", PROP_TAG(PT_LONG, i), pProp.Val.dw);
+			printf("Prop = 0x%08lX, Type = PT_LONG, Value = 0x%08lX\n", PROP_TAG(PT_LONG, i), pProp.Val.dw);
 		}
 
-		hRes = EC_H(lpAccount->GetProp(PROP_TAG(PT_UNICODE, i), &pProp));
+		hRes = lpAccount->GetProp(PROP_TAG(PT_UNICODE, i), &pProp);
 		if (SUCCEEDED(hRes))
 		{
-			printf("Prop = 0x%08lX, Type = PT_UNICODE, Value = %ws\r\n", PROP_TAG(PT_UNICODE, i), pProp.Val.pwsz);
+			printf("Prop = 0x%08lX, Type = PT_UNICODE, Value = %ws\n", PROP_TAG(PT_UNICODE, i), pProp.Val.pwsz);
+			(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
 		}
 
-		hRes = EC_H(lpAccount->GetProp(PROP_TAG(PT_BINARY, i), &pProp));
+		hRes = lpAccount->GetProp(PROP_TAG(PT_BINARY, i), &pProp);
 		if (SUCCEEDED(hRes))
 		{
 			printf("Prop = 0x%08lX, Type = PT_BINARY, Value = ", PROP_TAG(PT_BINARY, i));
 			PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-			printf("\r\n");
-			(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
+			printf("\n");
+			(void)lpAccount->FreeMemory(pProp.Val.bin.pb);
 		}
 	}
 
-	printf("Done iterating all properties\r\n");
+	printf("Done iterating all properties\n");
 }
 
 HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bIterateAllProps)
@@ -107,8 +145,8 @@ HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bI
 								DWORD i = 0;
 								for (i = 0; i < cAccounts; i++)
 								{
-									if (i > 0) printf("\r\n");
-									printf("Account #%lu\r\n", i + 1);
+									if (i > 0) printf("\n");
+									printf("Account #%lu\n", i + 1);
 									LPUNKNOWN lpUnk = nullptr;
 
 									hRes = EC_H(lpAcctEnum->GetNext(&lpUnk));
@@ -117,123 +155,26 @@ HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bI
 										LPOLKACCOUNT lpAccount = nullptr;
 
 										hRes = EC_H(lpUnk->QueryInterface(IID_IOlkAccount, reinterpret_cast<LPVOID*>(&lpAccount)));
-										if (SUCCEEDED(hRes) && lpAccount)
+										if (lpAccount)
 										{
-											ACCT_VARIANT pProp = { 0 };
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_NAME, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.pwsz)
-											{
-												printf("PROP_ACCT_NAME = \"%ws\"\r\n", pProp.Val.pwsz);
-												(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
-											}
+											LOGPROPSTRING(lpAccount, PROP_ACCT_NAME);
+											LOGPROPSTRING(lpAccount, PROP_ACCT_USER_DISPLAY_NAME);
+											LOGPROPSTRING(lpAccount, PROP_ACCT_USER_EMAIL_ADDR);
+											LOGPROPSTRING(lpAccount, PROP_ACCT_STAMP);
+											LOGPROPSTRING(lpAccount, PROP_ACCT_SEND_STAMP);
+											LOGPROPLONG(lpAccount, PROP_ACCT_IS_EXCH);
+											LOGPROPLONG(lpAccount, PROP_ACCT_ID);
+											LOGPROPBINARY(lpAccount, PROP_ACCT_DELIVERY_FOLDER);
+											LOGPROPBINARY(lpAccount, PROP_ACCT_DELIVERY_STORE);
+											LOGPROPBINARY(lpAccount, PROP_ACCT_SENTITEMS_EID);
+											LOGPROPBINARY(lpAccount, PR_NEXT_SEND_ACCT);
+											LOGPROPBINARY(lpAccount, PR_PRIMARY_SEND_ACCT);
+											LOGPROPBINARY(lpAccount, PROP_MAPI_IDENTITY_ENTRYID);
+											LOGPROPBINARY(lpAccount, PROP_MAPI_TRANSPORT_FLAGS);
 
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_USER_DISPLAY_NAME, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.pwsz)
-											{
-												printf("PROP_ACCT_USER_DISPLAY_NAME = \"%ws\"\r\n", pProp.Val.pwsz);
-												(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_USER_EMAIL_ADDR, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.pwsz)
-											{
-												printf("PROP_ACCT_USER_EMAIL_ADDR = \"%ws\"\r\n", pProp.Val.pwsz);
-												(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_STAMP, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.pwsz)
-											{
-												printf("PROP_ACCT_STAMP = \"%ws\"\r\n", pProp.Val.pwsz);
-												(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_SEND_STAMP, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.pwsz)
-											{
-												printf("PROP_ACCT_SEND_STAMP = \"%ws\"\r\n", pProp.Val.pwsz);
-												(void)lpAccount->FreeMemory(reinterpret_cast<LPBYTE>(pProp.Val.pwsz));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_IS_EXCH, &pProp));
-											if (SUCCEEDED(hRes))
-											{
-												printf("PROP_ACCT_IS_EXCH = 0x%08lX\r\n", pProp.Val.dw);
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_ID, &pProp));
-											if (SUCCEEDED(hRes))
-											{
-												printf("PROP_ACCT_ID = 0x%08lX\r\n", pProp.Val.dw);
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_DELIVERY_FOLDER, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PROP_ACCT_DELIVERY_FOLDER = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_DELIVERY_STORE, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PROP_ACCT_DELIVERY_STORE = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_ACCT_SENTITEMS_EID, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PROP_ACCT_SENTITEMS_EID = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PR_NEXT_SEND_ACCT, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PR_NEXT_SEND_ACCT = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PR_PRIMARY_SEND_ACCT, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PR_PRIMARY_SEND_ACCT = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_MAPI_IDENTITY_ENTRYID, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PROP_MAPI_IDENTITY_ENTRYID = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
-
-											hRes = EC_H(lpAccount->GetProp(PROP_MAPI_TRANSPORT_FLAGS, &pProp));
-											if (SUCCEEDED(hRes) && pProp.Val.bin.cb && pProp.Val.bin.pb)
-											{
-												printf("PROP_MAPI_TRANSPORT_FLAGS = ");
-												PrintBinary(pProp.Val.bin.cb, pProp.Val.bin.pb);
-												printf("\r\n");
-												(void)lpAccount->FreeMemory(static_cast<LPBYTE>(pProp.Val.bin.pb));
-											}
+											if (bIterateAllProps) IterateAllProps(lpAccount);
+											lpAccount->Release();
 										}
-
-										if (bIterateAllProps) IterateAllProps(lpAccount);
-										if (lpAccount) lpAccount->Release();
-										lpAccount = nullptr;
 									}
 
 									if (lpUnk) lpUnk->Release();
@@ -248,9 +189,8 @@ HRESULT EnumerateAccounts(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, bool bI
 			}
 
 			if (lpAcctHelper) lpAcctHelper->Release();
+			pMyAcctHelper->Release();
 		}
-
-		if (pMyAcctHelper) pMyAcctHelper->Release();
 	}
 
 	if (lpAcctMgr) lpAcctMgr->Release();
@@ -291,9 +231,8 @@ HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, ULONG 
 			}
 
 			if (lpAcctHelper) lpAcctHelper->Release();
+			pMyAcctHelper->Release();
 		}
-
-		if (pMyAcctHelper) pMyAcctHelper->Release();
 	}
 
 	if (lpAcctMgr) lpAcctMgr->Release();
@@ -303,13 +242,12 @@ HRESULT DisplayAccountList(LPMAPISESSION lpSession, LPCWSTR lpwszProfile, ULONG 
 
 std::wstring GetProfileName(LPMAPISESSION lpSession)
 {
-	auto hRes = S_OK;
 	LPPROFSECT lpProfSect = nullptr;
 	std::wstring profileName;
 
 	if (!lpSession) return profileName;
 
-	hRes = EC_H(lpSession->OpenProfileSection(
+	auto hRes = EC_H(lpSession->OpenProfileSection(
 		LPMAPIUID(pbGlobalProfileSectionGuid),
 		nullptr,
 		0,

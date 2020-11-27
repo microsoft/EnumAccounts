@@ -37,6 +37,12 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
@@ -80,12 +86,13 @@
   <ItemGroup>
     <ClCompile Include="AccountHelper.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MapiStubLibrary.cpp" />
-    <ClCompile Include="StubUtils.cpp" />
+    <ClCompile Include="MAPIStubLibrary\library\mapiStubLibrary.cpp" />
+    <ClCompile Include="MAPIStubLibrary\library\stubutils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountHelper.h" />
     <ClInclude Include="AcctMgmt.h" />
+    <ClInclude Include="MAPIStubLibrary\library\stubutils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

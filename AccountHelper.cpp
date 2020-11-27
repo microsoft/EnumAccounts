@@ -5,8 +5,8 @@
 #include <initguid.h>
 #include <MAPIGuid.h>
 
-#include "AcctMgmt.h"
-#include "AccountHelper.h"
+#include <AcctMgmt.h>
+#include <AccountHelper.h>
 
 CAccountHelper::CAccountHelper(LPCWSTR lpwszProfName, LPMAPISESSION lpSession)
 {

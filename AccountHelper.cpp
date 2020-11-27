@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <strsafe.h>
 
 #define USES_IID_IMAPISession
 #include <initguid.h>
@@ -37,6 +36,7 @@ STDMETHODIMP CAccountHelper::QueryInterface(REFIID riid,
 		AddRef();
 		return S_OK;
 	}
+
 	return E_NOINTERFACE;
 }
 

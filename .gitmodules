@@ -1,0 +1,3 @@
+[submodule "MAPIStubLibrary"]
+	path = MAPIStubLibrary
+	url = https://github.com/stephenegriffin/MAPIStubLibrary.git

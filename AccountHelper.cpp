@@ -1,12 +1,11 @@
 #include <Windows.h>
-#include <strsafe.h>
 
 #define USES_IID_IMAPISession
 #include <initguid.h>
 #include <MAPIGuid.h>
 
-#include "AcctMgmt.h"
-#include "AccountHelper.h"
+#include <AcctMgmt.h>
+#include <AccountHelper.h>
 
 CAccountHelper::CAccountHelper(LPCWSTR lpwszProfName, LPMAPISESSION lpSession)
 {
@@ -37,6 +36,7 @@ STDMETHODIMP CAccountHelper::QueryInterface(REFIID riid,
 		AddRef();
 		return S_OK;
 	}
+
 	return E_NOINTERFACE;
 }
 

@@ -273,7 +273,7 @@ public:
 	//Advise Registers an account for notifications sent by the account manager.
 	virtual STDMETHODIMP Advise(IOlkAccountNotify* pNotify, DWORD* pdwCookie);
 	//Unadvise Unregisters an account for notifications sent by the account manager.
-	virtual STDMETHODIMP Unadvise(DWORD* pdwCookie);
+	virtual STDMETHODIMP Unadvise(DWORD pdwCookie);
 
 	//Placeholder member Not supported or documented
 	virtual STDMETHODIMP PlaceHolder12();
